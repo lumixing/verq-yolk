@@ -2,12 +2,17 @@ import verq
 import log
 import env
 import kv
-import rand
-import strconv
 
 struct Context {
 mut:
 	balance_db kv.Database
+	commands   []Command
+}
+
+interface Command {
+	name       string
+	aliases    []string
+	call(mut client verq.Client, message verq.Message, args []string) !
 }
 
 fn main() {
@@ -20,6 +25,10 @@ fn main() {
 
 	context := Context {
 		balance_db: kv.load('balance.db')!
+		commands: [
+			BalanceCommand{}
+			BegCommand{}
+		]
 	}
 
 	client.context = voidptr(&context)
@@ -42,34 +51,17 @@ fn main() {
 
 		mut ctx := unsafe { &Context(client.context) }
 
-		match cmd {
-			'balance', 'bal' {
-				balance := ctx.balance_db.get(message.author.id) or {
-					ctx.balance_db.set(message.author.id, '0')
-					ctx.balance_db.save()!
-					'0'
-				}
+		mut no_commands := true
 
-				message.reply(client, 'you have \$$balance')!
+		for command in ctx.commands {
+			if command.name == cmd || cmd in command.aliases {
+				command.call(mut client, message, args)!
+				no_commands = false
 			}
-			'beg' {
-				amount := rand.u32_in_range(0, 1_000_000)!
+		}
 
-				balance := ctx.balance_db.get(message.author.id) or {
-					ctx.balance_db.set(message.author.id, '0')
-					'0'
-				}
-
-				mut parsed_balance := strconv.parse_uint(balance, 10, 32)!
-				parsed_balance += amount
-
-				ctx.balance_db.set(message.author.id, '$parsed_balance')
-				ctx.balance_db.save()!
-				message.reply(client, 'you begged for \$$amount\\nyou now have \$${format_thousands(parsed_balance)}')!
-			}
-			else {
-				message.reply(client, 'unknown command!')!
-			}
+		if no_commands {
+			message.reply(client, 'invalid command')!
 		}
 	}
 
