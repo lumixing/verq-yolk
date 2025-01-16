@@ -4,13 +4,13 @@ import x.json2 as json
 import os
 
 // todo: make db generic (json2decoder2 doesnt work for maps for some reason)
-struct Database {
+pub struct Database {
 	path string
 mut:
 	db map[string]string
 }
 
-pub fn Database.load(path string) !Database {
+pub fn load(path string) !Database {
 	if !os.is_file(path) {
 		return Database{path, {}}
 	}

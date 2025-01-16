@@ -3,6 +3,7 @@ module verq
 import net.websocket as ws
 import x.json2 as json
 import net.http
+import log
 
 type OnReadyFn = fn () !
 type OnMessageFn = fn (mut client Client, message Message) !
@@ -14,6 +15,7 @@ mut:
 	message       chan Message
 	last_sequence int
 pub mut:
+	context       voidptr
 	on_ready_fn   ?OnReadyFn
 	on_message_fn ?OnMessageFn
 }
@@ -59,6 +61,10 @@ fn (client Client) request(method http.Method, path string, body string) !string
 	req.add_header(.authorization, 'Bot ${client.client_secret}')
 	req.add_header(.content_type, 'application/json')
 	res := req.do()!
+
+	if res.status_code != 200 {
+		log.error('Response is not OK: req: $req, res: $res')
+	}
 
 	return res.body
 }
