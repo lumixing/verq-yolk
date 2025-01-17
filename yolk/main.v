@@ -28,6 +28,7 @@ fn main() {
 		commands: [
 			BalanceCommand{}
 			BegCommand{}
+			TopCommand{}
 		]
 	}
 
