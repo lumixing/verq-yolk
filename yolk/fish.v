@@ -1,5 +1,6 @@
 import verq
 import rand
+import x.json2 as json
 
 pub struct FishCommand {
 	name    string   = 'fish'
@@ -17,11 +18,17 @@ struct Fish {
 	size_str string
 }
 
+fn (item Fish) raw_item() !RawItem {
+	return RawItem{
+		kind: typeof(item).str()
+		data: json.raw_decode(json.encode(item))!
+	}
+}
+
 fn Fish.new() Fish {
 	rarity := FishRarity.new()
 	trait := FishTrait.new()
 	fish_data := FishData.new(rarity)
-	// size_mod := rand.normal(mu: 1, sigma: 0.5) or { panic(err) }
 	size_mod := rand.f32()
 	size := fish_data.base_size * ((size_mod * 2) + 1)
 
@@ -147,15 +154,31 @@ fn (trait FishTrait) value() int {
 pub fn (cmd FishCommand) call(mut client verq.Client, message verq.Message, args []string) ! {
 	mut ctx := unsafe { &Context(client.context) }
 
-	mut fish_arr := []Fish{}
-	for _ in 0..50 {
-		fish := Fish.new()
-		fish_arr << fish
+	fish := Fish.new()
+	
+	inv_str := ctx.items_db.get(message.author.id) or { 
+		ctx.items_db.set(message.author.id, '[]')
+		ctx.items_db.save()!
+		'[]'
 	}
 
-	fish_arr.sort(a.value < b.value)
-	fish_names := fish_arr.map(it.string_name())
+	raw_raw_inv := json.raw_decode(inv_str)!
+	
+	mut inv := []Item{}
+	
+	for raw_raw_item in raw_raw_inv as []json.Any {
+		raw_item := json.decode[RawItem](json.encode(raw_raw_item))!
+		inv << raw_item.to_item()!
+	}
 
-	message.reply(client, fish_names.join('\\n'))!
+	inv << fish
+
+	raw_inv := inv.map(it.raw_item()!)
+	raw_inv_str := json.encode(raw_inv)
+
+	ctx.items_db.set(message.author.id, raw_inv_str)
+	ctx.items_db.save()!
+
+	message.reply(client, 'you caught ${fish.string_name()}')!
 }
 

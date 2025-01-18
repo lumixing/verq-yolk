@@ -6,6 +6,7 @@ import kv
 struct Context {
 mut:
 	balance_db kv.Database
+	items_db   kv.Database
 	commands   []Command
 }
 
@@ -25,11 +26,13 @@ fn main() {
 
 	context := Context {
 		balance_db: kv.load('balance.db')!
+		items_db: kv.load('items.db')!
 		commands: [
 			BalanceCommand{}
 			BegCommand{}
 			TopCommand{}
 			FishCommand{}
+			InventoryCommand{}
 		]
 	}
 

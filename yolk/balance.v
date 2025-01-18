@@ -1,5 +1,4 @@
 import verq
-import log
 
 pub struct BalanceCommand {
 	name    string   = 'balance'
@@ -27,8 +26,6 @@ pub fn (cmd BalanceCommand) call(mut client verq.Client, message verq.Message, a
 		ctx.balance_db.save()!
 		'0'
 	}
-
-	log.info('$args')
 
 	content := if user_id == message.author.id {
 		'you have \$$balance'
