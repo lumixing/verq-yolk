@@ -29,6 +29,7 @@ fn main() {
 			BalanceCommand{}
 			BegCommand{}
 			TopCommand{}
+			FishCommand{}
 		]
 	}
 
